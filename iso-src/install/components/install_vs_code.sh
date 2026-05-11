@@ -1,7 +1,18 @@
 set -e
+
+export VSCODE_VERSION="1.119.0"
+
 apt update
 apt install -y wget \
     libnspr4 libnss3 libxkbfile1 xdg-utils
-wget https://go.microsoft.com/fwlink/?LinkID=760868 --output-document /tmp/code.dep
+
+if test "$(uname -m)" = "x86_64"; then
+	wget "https://update.code.visualstudio.com/$VSCODE_VERSION/linux-deb-x64/stable" --output-document /tmp/code.dep
+fi
+
+if test "$(uname -m)" = "aarch64"; then
+	wget "https://update.code.visualstudio.com/$VSCODE_VERSION/linux-deb-arm64/stable" --output-document /tmp/code.dep
+fi
+
 dpkg -i /tmp/code.dep
 rm /tmp/code.dep
