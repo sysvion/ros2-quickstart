@@ -1,0 +1,10 @@
+The purpose of the at home practice to install the software at home and to give an overview of how ros works which they can go with.  
+
+| #   | Time | chapter                | detail                                                                                                                                                                                               |
+| --- | ---- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|     |      | end product preview    | A quick view about what we going to do                                                                                                                                                               |
+|     |      | Instalation            | links to oracle's virtualbox. Import image.                                                                                                                                                          |
+|     |      | Moveit x rviz overview | First lauch. Move the robot and make first path via the gui                                                                                                                                          |
+|     |      | Programing the robot   | The student learns about the [ ros2 services](https://docs.ros.org/en/kilted/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Services/Understanding-ROS2-Services.html) by using it to move te robot |
+|     |      | opencv                 | The user learns a bit about nodes and topics when they create and spins a new node that uses an external non ros library using data provided using a topic                                           |
+|     |      |                        |                                                                                                                                                                                                      |
