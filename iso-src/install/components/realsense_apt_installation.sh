@@ -17,5 +17,11 @@ sudo apt-get update
 # install
 sudo apt-get -y install librealsense2-dkms librealsense2-utils librealsense2-dev librealsense2-dbg
 
-# TODO: clone && rosdep update && colcon build reaksenseai's ros wrapper
-# https://github.com/realsenseai/realsense-ros
+git clone --depth 1 --branch ros2-master \
+    https://github.com/realsenseai/realsense-ros.git \
+    /opt/ros_vendor_ws/src/realsense-ros
+
+cd /opt/ros_vendor_ws/
+rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
+colcon build
+cd -
