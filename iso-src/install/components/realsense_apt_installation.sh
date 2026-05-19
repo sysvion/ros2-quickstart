@@ -21,7 +21,10 @@ git clone --depth 1 --branch ros2-master \
     https://github.com/realsenseai/realsense-ros.git \
     /opt/ros_vendor_ws/src/realsense-ros
 
+find /opt/ros_vendor_ws/src/realsense-ros/ -name "*.cpp" -exec sed --in-place "s/cv_bridge.h>/cv_bridge.hpp>/g" {} \+
+
 cd /opt/ros_vendor_ws/
+. /opt/ros/jazzy/setup.bash
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
-colcon build
+colcon build --paths src/realsense-ros/* --cmake-args -DRVIZ_RGBD_PLUGIN=ON
 cd -
