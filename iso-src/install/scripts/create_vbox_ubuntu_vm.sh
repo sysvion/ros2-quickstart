@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DATA_HOME="$HOME/.cache/share/ros_vm_tool"
+ISO_DIR="$DATA_HOME/iso"
+
+# i think only dirname could work
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+VM_NAME="practicum-ubuntu"
+VM_USER="${VM_USER:-practicum}"
+VM_PASSWORD="smr"
+VM_MEMORY_MB="8192"
+VM_CPUS="4"
+VM_DISK_GB="48"
+
+# TODO: validate all greps
+# FIXME: upload and autolaunch the install script
+
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
+}
+
+require_cmd VBoxManage
+require_cmd uname
+require_cmd echo
+require_cmd scp
+# curl or wget
+
+
+log() { echo '==>' "%*"}
+die() { echo 'error: ' "$*" >&2; exit 1; }
+
+detect_host_arch() {
+  case "$(uname -m)" in
+    x86_64|amd64) echo "amd64" ;;
+    aarch64|arm64) echo "arm64" ;;
+    *) die "unsupported host architecture: ${machine} (x86_64 and aarch64 are supported)" ;;
+  esac
+}
+
+ISO_BASE_URL="https://cdimage.ubuntu.com/noble/daily-live/current"
+iso_filename_for_arch() {
+  local arch="$1"
+  case "${arch}" in
+    amd64) echo "noble-desktop-amd64.iso" ;;
+    arm64) echo "noble-desktop-arm64.iso" ;;
+    *) die "unknown arch: ${arch}" ;;
+  esac
+}
+
+# Get the list of all supported using `VBoxManage list ostypes`
+vbox_ostype_for_arch() {
+  local arch="$1"
+  case "${arch}" in
+    amd64) echo "Ubuntu24_LTS_64" ;;
+    arm64) echo "Ubuntu24_LTS_arm64"
+      ;;
+    *) die "unknown arch: ${arch}" ;;
+  esac
+}
+
+# TODO: add zsync
+download_iso() {
+  local arch filename url dest
+  arch="$(detect_host_arch)"
+  filename="$(iso_filename_for_arch "${arch}")"
+  url="${ISO_BASE_URL}/${filename}"
+  dest="${ISO_DIR}/${filename}"
+
+  if [ -e ]; then
+      log "lol"
+      return
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    log "Downloading ${url} using curl"
+    curl -fL --progress-bar -o "${dest}.partial" "${url}"
+    mv "${dest}.partial" "${dest}"
+  elif command -v wget >/dev/null 2>&1; then
+    log "Downloading ${url} using wget"
+    wget -O "${dest}.partial" "${url}"
+    mv "${dest}.partial" "${dest}"
+  else
+    die "need curl or wget to download the ISO"
+  fi
+  log "download completed"
+}
+
+# TODO: Handle already existing disks or vms
+prepare_vm() {
+  local  arch iso_path ostype disk_path disk_mb
+  arch="$(detect_host_arch)"
+  disk_path="$DATA_HOME/disk.vdi"
+  disk_mb=$((VM_DISK_GB * 1024))
+  iso_file="${ISO_DIR}/"$(iso_filename_for_arch "${arch}")""
+
+
+
+  log "Creating VM ${VM_NAME} (${arch} ISO)"
+  VBoxManage createvm --name "${VM_NAME}" --ostype "$(vbox_ostype_for_arch "${arch}")" --register
+  VBoxManage modifyvm "${VM_NAME}" \
+      --memory "${VM_MEMORY_MB}" \
+      --cpus "${VM_CPUS}" \
+      --vram 64 \
+      --boot1 dvd \
+      --boot2 disk \
+      --boot3 none \
+      --boot4 none
+
+  # create disk image
+  mkdir -p "$(dirname "${disk_path}")"
+  VBoxManage createmedium disk --filename "${disk_path}" --size "${disk_mb}" --format VDI
+  VBoxManage storagectl "${VM_NAME}" --name SATA --add sata --controller IntelAhci
+
+  VBoxManage storageattach "${VM_NAME}" --storagectl SATA --port 0 --device 0 \
+      --type hdd --medium "${disk_path}"
+
+  VBoxManage unattended install "${VM_NAME}" \
+      --iso="${iso_file}" \
+      --user="${VM_USER}" \
+      --full-user-name="${VM_USER}" \
+      --user-password="${VM_PASSWORD}" \
+      --install-additions \
+      --locale=en_US \
+      --country=NL \
+      --time-zone=cest 
+}
+
+# BACKUP: Insralling ssh on host isn't worth it
+#ssh_run() {
+#  local -a ssh_cmd opts
+#  opts=($(ssh_common_opts))
+#  if [[ -n "${VM_PASSWORD}" ]] && command -v sshpass >/dev/null 2>&1; then
+#    sshpass -p "${VM_PASSWORD}" ssh "${opts[@]}" "$(ssh_target)" "$@"
+#  else
+#    ssh "${opts[@]}" "$(ssh_target)" "$@"
+#  fi
+#}
+
+ensure_vm_running() {
+  local state
+  state="$(VBoxManage showvminfo "${VM_NAME}" --machinereadable 2>/dev/null | awk -F'"' '/^VMState=/ {print $2}')"
+  if [[ "${state}" != "running" ]]; then
+    log "Starting VM ${VM_NAME}"
+    VBoxManage startvm "${VM_NAME}" --type headless
+  fi
+}
+
+
+main() {
+
+  #VBoxManage showvminfo "${VM_NAME}" &> /dev/null 
+  #if [ $? -eq 0 ]; then
+  #    log "VBoxManage showvminfo succeeds. Youre probably allready have a vm called ${VM_NAME}"
+  #    log "installed. Please remove it. You can remove it with the virtual box gui or"
+  #    log "you can use alongside the gui \`vboxmanage unregistervm ${VM_NAME} --delete-all\`"
+  #    exit 1
+  #fi
+  download_iso
+  prepare_vm 
+
+  log "Starting VM for Ubuntu autoinstallation"
+  VBoxManage startvm "${VM_NAME}" --type gui
+
+  VBoxManage guestcontrol \
+      practicum-ubuntu --user practicum --password smr \
+      copyto \
+      -R $PWD/iso-src/install/ /home/practicum/install
+
+  VBoxManage guestcontrol \
+      practicum-ubuntu --user practicum --password smr \
+      run \
+      -- /usr/bin/env bash -c "cd home/practicum/instal/ && /usr/bin/env bash scripts/LocalInstall.sh"
+
+   # sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+   # sudo: a password is required
+
+  exit
+}
+
+main
