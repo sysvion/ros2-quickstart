@@ -4,6 +4,9 @@ docker-build:
         --tag ros-prac \
         iso-src/install
 
+create-vm:
+    bash ./iso-src/install/scripts/create_vbox_ubuntu_vm.sh
+
 docker-x11-minimal:
     docker run \
         --rm \

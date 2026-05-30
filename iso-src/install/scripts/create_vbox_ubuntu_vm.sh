@@ -30,7 +30,7 @@ require_cmd scp
 # curl or wget
 
 
-log() { echo '==>' "%*"}
+log() { echo '==>' "$*";}
 die() { echo 'error: ' "$*" >&2; exit 1; }
 
 detect_host_arch() {
@@ -70,8 +70,10 @@ download_iso() {
   url="${ISO_BASE_URL}/${filename}"
   dest="${ISO_DIR}/${filename}"
 
-  if [ -e ]; then
-      log "lol"
+  mkdir -p ${ISO_DIR}
+
+  if [ -e $dest ]; then
+      log "reusing image. remove ${dest} if you wanna redownload disk image"
       return
   fi
 
@@ -97,14 +99,17 @@ prepare_vm() {
   disk_mb=$((VM_DISK_GB * 1024))
   iso_file="${ISO_DIR}/"$(iso_filename_for_arch "${arch}")""
 
-
-
   log "Creating VM ${VM_NAME} (${arch} ISO)"
   VBoxManage createvm --name "${VM_NAME}" --ostype "$(vbox_ostype_for_arch "${arch}")" --register
   VBoxManage modifyvm "${VM_NAME}" \
       --memory "${VM_MEMORY_MB}" \
-      --cpus "${VM_CPUS}" \
+      --cpus "${VM_CPUS}"
+
+  VBoxManage modifyvm "${VM_NAME}" \
       --vram 64 \
+      --graphicscontroller=vmsvga
+
+  VBoxManage modifyvm "${VM_NAME}" \
       --boot1 dvd \
       --boot2 disk \
       --boot3 none \
@@ -124,6 +129,7 @@ prepare_vm() {
       --full-user-name="${VM_USER}" \
       --user-password="${VM_PASSWORD}" \
       --install-additions \
+      --post-install-command="VBoxControl guestproperty set autoinstall y" \
       --locale=en_US \
       --country=NL \
       --time-zone=cest 
@@ -165,18 +171,34 @@ main() {
   log "Starting VM for Ubuntu autoinstallation"
   VBoxManage startvm "${VM_NAME}" --type gui
 
+  sleep 10s # wait until vm is up
+  log "start waiting for proprity"
+
+  VBoxManage guestproperty wait "${VM_NAME}" autoinstall
+
+  sleep 5m # wait until vm has rebooted and guest additions loaded
+            # yeah its to long but it needs to be here and 1m is to short
+
   VBoxManage guestcontrol \
-      practicum-ubuntu --user practicum --password smr \
+      "${VM_NAME}" --user "${VM_USER}" --password "${VM_PASSWORD}" \
       copyto \
       -R $PWD/iso-src/install/ /home/practicum/install
 
-  VBoxManage guestcontrol \
-      practicum-ubuntu --user practicum --password smr \
-      run \
-      -- /usr/bin/env bash -c "cd home/practicum/instal/ && /usr/bin/env bash scripts/LocalInstall.sh"
-
-   # sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
-   # sudo: a password is required
+  # run installscript with SUDO_ASKPASS
+  #VBoxManage guestcontrol "${VM_NAME}"  --user "${VM_USER}"  --password "${VM_PASSWORD}"       run       -- /usr/bin/env bash -c '
+#export DEBIAN_FRONTEND=noninteractive
+#cat > /home/'"${VM_USER}"'/vm_askpass.sh <<EOF
+##!/bin/bash
+#echo "'"${VM_PASSWORD}"'"
+#EOF
+#
+#chmod u+x /home/'"${VM_USER}"'/vm_askpass.sh
+#export SUDO_ASKPASS=/home/'"${VM_USER}"'/vm_askpass.sh
+#cd /home/practicum/install/scripts
+#nohup bash LocalInstall.sh
+#
+#rm /home/'"${VM_USER}"'/vm_askpass.sh 
+#'
 
   exit
 }
