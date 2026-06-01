@@ -16,8 +16,6 @@ VM_CPUS="4"
 VM_DISK_GB="48"
 
 # TODO: validate all greps
-# FIXME: upload and autolaunch the install script
-
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
@@ -135,26 +133,6 @@ prepare_vm() {
       --time-zone=cest 
 }
 
-# BACKUP: Insralling ssh on host isn't worth it
-#ssh_run() {
-#  local -a ssh_cmd opts
-#  opts=($(ssh_common_opts))
-#  if [[ -n "${VM_PASSWORD}" ]] && command -v sshpass >/dev/null 2>&1; then
-#    sshpass -p "${VM_PASSWORD}" ssh "${opts[@]}" "$(ssh_target)" "$@"
-#  else
-#    ssh "${opts[@]}" "$(ssh_target)" "$@"
-#  fi
-#}
-
-ensure_vm_running() {
-  local state
-  state="$(VBoxManage showvminfo "${VM_NAME}" --machinereadable 2>/dev/null | awk -F'"' '/^VMState=/ {print $2}')"
-  if [[ "${state}" != "running" ]]; then
-    log "Starting VM ${VM_NAME}"
-    VBoxManage startvm "${VM_NAME}" --type headless
-  fi
-}
-
 
 main() {
 
@@ -184,21 +162,26 @@ main() {
       copyto \
       -R $PWD/iso-src/install/ /home/practicum/install
 
-  # run installscript with SUDO_ASKPASS
-  #VBoxManage guestcontrol "${VM_NAME}"  --user "${VM_USER}"  --password "${VM_PASSWORD}"       run       -- /usr/bin/env bash -c '
-#export DEBIAN_FRONTEND=noninteractive
-#cat > /home/'"${VM_USER}"'/vm_askpass.sh <<EOF
-##!/bin/bash
-#echo "'"${VM_PASSWORD}"'"
-#EOF
-#
-#chmod u+x /home/'"${VM_USER}"'/vm_askpass.sh
-#export SUDO_ASKPASS=/home/'"${VM_USER}"'/vm_askpass.sh
-#cd /home/practicum/install/scripts
-#nohup bash LocalInstall.sh
-#
-#rm /home/'"${VM_USER}"'/vm_askpass.sh 
-#'
+   # run installscript with SUDO_ASKPASS
+  VBoxManage guestcontrol "${VM_NAME}"  --user "${VM_USER}"  --password "${VM_PASSWORD}"       run       -- /usr/bin/env bash -c '
+export DEBIAN_FRONTEND=noninteractive
+
+# create askpass so tty is not needded
+cat > /home/'"${VM_USER}"'/vm_askpass.sh <<EOF
+#!/bin/bash
+echo "'"${VM_PASSWORD}"'"
+EOF
+chmod u+x /home/'"${VM_USER}"'/vm_askpass.sh
+export SUDO_ASKPASS=/home/'"${VM_USER}"'/vm_askpass.sh
+
+# RUN the command within systemd because guestcontrol connection is volitle
+nohup sudo -A systemd-run \
+	--setenv=SUDO_ASKPASS="${SUDO_ASKPASS}" \
+	-- bash -c " \
+		cd /home/practicum/install/scripts
+		sudo --preserve-env --user="'"${VM_USER}"'" bash LocalInstall.sh
+		"
+'
 
   exit
 }
