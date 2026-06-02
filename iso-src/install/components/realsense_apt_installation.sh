@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -e
 
 # Install realsense SDK 2.0 from the hardware vendor hosted apt remote as of descripted in https://github.com/realsenseai/librealsense/blob/master/doc/distribution_linux.md
@@ -19,12 +18,15 @@ sudo -A apt-get -y install librealsense2-dkms librealsense2-utils librealsense2-
 
 git clone --depth 1 --branch ros2-master \
     https://github.com/realsenseai/realsense-ros.git \
-    /opt/ros_vendor_ws/src/realsense-ros
+    ~/ros_vendor_ws/src/realsense-ros
 
-find /opt/ros_vendor_ws/src/realsense-ros/ -name "*.cpp" -exec sed --in-place "s/cv_bridge.h>/cv_bridge.hpp>/g" {} \+
+find ~/ros_vendor_ws/src/realsense-ros/ -name "*.cpp" -exec sed --in-place "s/cv_bridge.h>/cv_bridge.hpp>/g" {} \+
 
-cd /opt/ros_vendor_ws/
+cd ~/ros_vendor_ws/
 . /opt/ros/jazzy/setup.bash
+
+# refresh sudo login timeout
+sudo -A ls
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
 colcon build --paths src/realsense-ros/* --cmake-args -DRVIZ_RGBD_PLUGIN=ON
 cd -

@@ -154,7 +154,7 @@ main() {
 
   VBoxManage guestproperty wait "${VM_NAME}" autoinstall
 
-  sleep 5m # wait until vm has rebooted and guest additions loaded
+  sleep 2m # wait until vm has rebooted and guest additions loaded
             # yeah its to long but it needs to be here and 1m is to short
 
   VBoxManage guestcontrol \
@@ -178,8 +178,10 @@ export SUDO_ASKPASS=/home/'"${VM_USER}"'/vm_askpass.sh
 nohup sudo -A systemd-run \
 	--setenv=SUDO_ASKPASS="${SUDO_ASKPASS}" \
 	-- bash -c " \
-		cd /home/practicum/install/scripts
+		systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+		cd /home/practicum/install/scripts;
 		sudo --preserve-env --user="'"${VM_USER}"'" bash LocalInstall.sh
+		systemctl unmask sleep.target suspend.target hibernate.target hybrid-sleep.target
 		"
 '
 
