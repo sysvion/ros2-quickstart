@@ -4,18 +4,16 @@ set -euo pipefail
 DATA_HOME="$HOME/.cache/share/ros_vm_tool"
 ISO_DIR="$DATA_HOME/iso"
 
-# i think only dirname could work
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-VM_NAME="practicum-ubuntu"
+VM_NAME="${VM_NAME:-practicum-ros}"
 VM_USER="${VM_USER:-practicum}"
-VM_PASSWORD="smr"
+VM_PASSWORD="${VM_PASSWORD:-smr}"
 VM_MEMORY_MB="8192"
 VM_CPUS="4"
 VM_DISK_GB="48"
 
-# TODO: validate all greps
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
@@ -24,7 +22,12 @@ require_cmd() {
 require_cmd VBoxManage
 require_cmd uname
 require_cmd echo
-require_cmd scp
+require_cmd mkdir
+require_cmd sleep
+
+# test binary of gnu core utils:
+require_cmd [
+
 # curl or wget
 
 
@@ -71,7 +74,7 @@ download_iso() {
   mkdir -p ${ISO_DIR}
 
   if [ -e $dest ]; then
-      log "reusing image. remove ${dest} if you wanna redownload disk image"
+      log "reusing image. remove ${dest} if you want to redownload disk image"
       return
   fi
 
@@ -93,12 +96,17 @@ download_iso() {
 prepare_vm() {
   local  arch iso_path ostype disk_path disk_mb
   arch="$(detect_host_arch)"
-  disk_path="$DATA_HOME/disk.vdi"
+  disk_path="$DATA_HOME/${VM_NAME}-disk.vdi"
   disk_mb=$((VM_DISK_GB * 1024))
   iso_file="${ISO_DIR}/"$(iso_filename_for_arch "${arch}")""
 
   log "Creating VM ${VM_NAME} (${arch} ISO)"
-  VBoxManage createvm --name "${VM_NAME}" --ostype "$(vbox_ostype_for_arch "${arch}")" --register
+
+  VBoxManage createvm \
+      --name "${VM_NAME}" \
+      --ostype "$(vbox_ostype_for_arch "${arch}")" \
+      --register
+
   VBoxManage modifyvm "${VM_NAME}" \
       --memory "${VM_MEMORY_MB}" \
       --cpus "${VM_CPUS}"
@@ -150,7 +158,7 @@ main() {
   VBoxManage startvm "${VM_NAME}" --type gui
 
   sleep 10s # wait until vm is up
-  log "start waiting for proprity"
+  log "start waiting for property"
 
   VBoxManage guestproperty wait "${VM_NAME}" autoinstall
 
@@ -162,7 +170,7 @@ main() {
       copyto \
       -R $PWD/iso-src/install/ /home/practicum/install
 
-   # run installscript with SUDO_ASKPASS
+   # run installscript in a systemd unit with SUDO_ASKPASS
   VBoxManage guestcontrol "${VM_NAME}"  --user "${VM_USER}"  --password "${VM_PASSWORD}"       run       -- /usr/bin/env bash -c '
 export DEBIAN_FRONTEND=noninteractive
 
@@ -182,10 +190,9 @@ nohup sudo -A systemd-run \
 		cd /home/practicum/install/scripts;
 		sudo --preserve-env --user="'"${VM_USER}"'" bash LocalInstall.sh
 		systemctl unmask sleep.target suspend.target hibernate.target hybrid-sleep.target
+		rm /home/'"${VM_USER}"'/vm_askpass.sh 
 		"
 '
-
-  exit
 }
 
 main
