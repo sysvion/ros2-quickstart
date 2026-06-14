@@ -5,7 +5,7 @@ DATA_HOME="$HOME/.cache/share/ros_vm_tool"
 ISO_DIR="$DATA_HOME/iso"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+INSTALL_SCRIPT_ROOT="$(cd "${SCRIPT_DIR}/../../install_script" && pwd)"
 
 VM_NAME="${VM_NAME:-practicum-ros}"
 VM_USER="${VM_USER:-practicum}"
@@ -168,7 +168,7 @@ main() {
   VBoxManage guestcontrol \
       "${VM_NAME}" --user "${VM_USER}" --password "${VM_PASSWORD}" \
       copyto \
-      -R $PWD/iso-src/install/ /home/practicum/install
+      -R $INSTALL_SCRIPT_ROOT /home/practicum/install_script
 
    # run installscript in a systemd unit with SUDO_ASKPASS
   VBoxManage guestcontrol "${VM_NAME}"  --user "${VM_USER}"  --password "${VM_PASSWORD}"       run       -- /usr/bin/env bash -c '
@@ -187,8 +187,8 @@ nohup sudo -A systemd-run \
 	--setenv=SUDO_ASKPASS="${SUDO_ASKPASS}" \
 	-- bash -c " \
 		systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
-		cd /home/practicum/install/scripts;
-		sudo --preserve-env --user="'"${VM_USER}"'" bash LocalInstall.sh
+		cd /home/practicum/install_script/
+		sudo --preserve-env --user="'"${VM_USER}"'" bash process.bash
 		systemctl unmask sleep.target suspend.target hibernate.target hybrid-sleep.target
 		rm /home/'"${VM_USER}"'/vm_askpass.sh 
 		"

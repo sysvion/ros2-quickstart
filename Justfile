@@ -1,11 +1,12 @@
+create-vm:
+    bash ./distributions/virtualbox/create_vbox_vm.sh
+
 docker-build:
     DOCKER_BUILDKIT=1 docker build \
         --file iso-src/install/scripts/Dockerfile \
         --tag ros-prac \
         iso-src/install
 
-create-vm:
-    bash ./iso-src/install/scripts/create_vbox_ubuntu_vm.sh
 
 docker-x11-minimal:
     docker run \
