@@ -1,0 +1,16 @@
+#cloud-config
+packages:
+  - ubuntu-desktop
+  - winpr3-utils
+  - winpr-utils
+package_update: true
+package_upgrade: true
+runcmd:
+  - mkdir -p /root/certs
+  - mkdir -p ~/.local/share/gnome-remote-desktop/
+  - openssl req -new -newkey rsa:4096 -days 720 -nodes -x509 -subj /C=NL/ST=Zuid-holland/L=Delft/O=hhs/CN=hhs.nl -out ~/.local/share/gnome-remote-desktop/tls.crt -keyout ~/.local/share/gnome-remote-desktop/tls.key
+  - grdctl --headless rdp set-tls-key ~/.local/share/gnome-remote-desktop/tls.key
+  - grdctl --headless rdp set-tls-cert ~/.local/share/gnome-remote-desktop/tls.crt
+  - grdctl --headless rdp enable
+  - systemctl --user enable gnome-remote-desktop-headless.service
+  - reboot
