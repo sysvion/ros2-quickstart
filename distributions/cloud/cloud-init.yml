@@ -3,14 +3,19 @@ packages:
   - ubuntu-desktop
   - winpr3-utils
   - winpr-utils
+  - gnome-remote-desktop
 package_update: true
 package_upgrade: true
-runcmd:
-  - mkdir -p /root/certs
-  - mkdir -p ~/.local/share/gnome-remote-desktop/
-  - openssl req -new -newkey rsa:4096 -days 720 -nodes -x509 -subj /C=NL/ST=Zuid-holland/L=Delft/O=hhs/CN=hhs.nl -out ~/.local/share/gnome-remote-desktop/tls.crt -keyout ~/.local/share/gnome-remote-desktop/tls.key
-  - grdctl --headless rdp set-tls-key ~/.local/share/gnome-remote-desktop/tls.key
-  - grdctl --headless rdp set-tls-cert ~/.local/share/gnome-remote-desktop/tls.crt
+runcmd: # cmd's will be run as root
+  # Gnome-Remote-Desktop
+  # sudo -u gnome-remote-desktop
+
+  - mkdir -p /etc/gnome-remote-desktop/MyCerts
+  - openssl req -new -newkey rsa:4096 -days 720 -nodes -x509 -subj /C=NL/ST=Zuid-holland/L=Delft/O=hhs/CN=hhs.nl -out /etc/gnome-remote-desktop/MyCerts/tls.crt -keyout /etc/gnome-remote-desktop/MyCerts/tls.key
+  - grdctl --headless rdp set-tls-key /etc/gnome-remote-desktop/MyCerts/tls.key
+  - grdctl --headless rdp set-tls-cert /etc/gnome-remote-desktop/tls.crt
   - grdctl --headless rdp enable
-  - systemctl --user enable gnome-remote-desktop-headless.service
+  - systemctl enable gnome-remote-desktop-headless.service
+  - systemctl enable gnome-remote-desktop.service
+
   - reboot
