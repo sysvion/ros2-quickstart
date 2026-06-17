@@ -22,10 +22,3 @@ EOF
 
 sudo -A apt update
 sudo -A apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-##################################
-# Install universal robot driver #
-##################################
-
-echo "===> install universal robots" >> /tmp/install.log
-sudo -A apt install ros-jazzy-ur -y
