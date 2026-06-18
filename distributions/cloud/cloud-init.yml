@@ -12,17 +12,19 @@ packages:
 package_update: true
 package_upgrade: true
 runcmd: # cmd's will be run as root
+
+  # TODO: change this to a hash.
   - printf "user:still_testing" | chpasswd
 
   # Gnome-Remote-Desktop
-  - sudo --login -u user mkdir -p /home/user/MyCerts
-  - sudo --login -u user openssl req -new -newkey rsa:4096 -days 720 -nodes -x509 -subj /C=NL/ST=Zuid-holland/L=Delft/O=hhs/CN=hhs.nl -out /home/user/MyCerts/tls.crt -keyout /home/user/MyCerts/tls.key
-  - sudo --login -u user grdctl --system rdp set-tls-cert /home/user/MyCerts/tls.crt
-  - sudo --login -u user grdctl --system rdp set-tls-cert /home/user/MyCerts/tls.crt
-  - sudo --login -u user grdctl --system rdp set-tls-key /home/user/MyCerts/tls.key
-  - sudo --login -u user grdctl --system rdp enable
-  - sudo --login -u user grdctl --system rdp set-credentials test testing
-  - sudo --login -u user systemctl enable --user gnome-remote-desktop.service
+  - sudo -u gnome-remote-desktop sh -c 'winpr-makecert -silent -rdp -path ~/.local/share/gnome-remote-desktop tls'
+  - grdctl --system rdp set-tls-cert /var/lib/gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.crt
+  - grdctl --system rdp set-tls-cert /var/lib/gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.crt
+  - grdctl --system rdp set-tls-key /var/lib/gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.key
+  - grdctl --system rdp enable
+  - grdctl --system rdp set-credentials test testing
+  - systemctl enable --now gdm.service
+  - systemctl enable --now gnome-remote-desktop.service
     
 
   - reboot
