@@ -1,4 +1,9 @@
 #cloud-config
+users:
+  - name: user
+    groups: users, admin, wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
 packages:
   - ubuntu-desktop
   - winpr3-utils
@@ -7,15 +12,17 @@ packages:
 package_update: true
 package_upgrade: true
 runcmd: # cmd's will be run as root
-  # Gnome-Remote-Desktop
-  # sudo -u gnome-remote-desktop
+  - printf "user:still_testing" | chpasswd
 
-  - mkdir -p /etc/gnome-remote-desktop/MyCerts
-  - openssl req -new -newkey rsa:4096 -days 720 -nodes -x509 -subj /C=NL/ST=Zuid-holland/L=Delft/O=hhs/CN=hhs.nl -out /etc/gnome-remote-desktop/MyCerts/tls.crt -keyout /etc/gnome-remote-desktop/MyCerts/tls.key
-  - grdctl --headless rdp set-tls-key /etc/gnome-remote-desktop/MyCerts/tls.key
-  - grdctl --headless rdp set-tls-cert /etc/gnome-remote-desktop/tls.crt
-  - grdctl --headless rdp enable
-  - systemctl enable gnome-remote-desktop-headless.service
-  - systemctl enable gnome-remote-desktop.service
+  # Gnome-Remote-Desktop
+  - sudo --login -u user mkdir -p /home/user/MyCerts
+  - sudo --login -u user openssl req -new -newkey rsa:4096 -days 720 -nodes -x509 -subj /C=NL/ST=Zuid-holland/L=Delft/O=hhs/CN=hhs.nl -out /home/user/MyCerts/tls.crt -keyout /home/user/MyCerts/tls.key
+  - sudo --login -u user grdctl --system rdp set-tls-cert /home/user/MyCerts/tls.crt
+  - sudo --login -u user grdctl --system rdp set-tls-cert /home/user/MyCerts/tls.crt
+  - sudo --login -u user grdctl --system rdp set-tls-key /home/user/MyCerts/tls.key
+  - sudo --login -u user grdctl --system rdp enable
+  - sudo --login -u user grdctl --system rdp set-credentials test testing
+  - sudo --login -u user systemctl enable --user gnome-remote-desktop.service
+    
 
   - reboot
