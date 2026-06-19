@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 
 import os
+from time import sleep
 import subprocess
 from pathlib import Path
 
@@ -104,7 +105,7 @@ def main():
     key = client.ssh_keys.create(name=vm_name, public_key=public_key)
 
     # init script
-    print("creating the server")
+    print("creating a server with id " + str(vm_id))
     cloud_init = readContensOfFile(distro_root / "cloud-init.yml")
     # TODO: change password within script
 
@@ -117,6 +118,8 @@ def main():
     )
 
     server.action.wait_until_finished()
+    print("now sleep")
+    sleep(100)
 
     # upload and run install script
     dest = "root@"+server.server.public_net.ipv4.ip+":/opt/install"
@@ -139,11 +142,12 @@ def main():
                      "bash",
                      "-c \"",
                      """
-                     printf user+"""+password+""" | chpasswd
+                     printf user:"""+password+""" | chpasswd
                      cat > /opt/askpass.sh <<EOD
                      echo -n """+password+"""
 EOD
 
+                     cloud-init status --wait
                      grdctl --system rdp set-credentials test testing
                      chmod o+x /opt/askpass.sh
                      systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
