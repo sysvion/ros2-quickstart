@@ -4,7 +4,7 @@ git clone https://github.com/sysvion/qt-tutorial-app.git $HOME/.local/share/ros2
 cd $HOME/.local/share/ros2-tutorial-gui/src
 
 # setup venv
-sudo -A apt install pytho3-venv python3-pip
+sudo -A apt install python3-venv python3-pip
 python3 -m venv venv
 source ./venv/bin/activate
 pip install -r requirements.txt

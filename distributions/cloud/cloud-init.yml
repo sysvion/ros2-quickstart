@@ -13,18 +13,11 @@ package_update: true
 package_upgrade: true
 runcmd: # cmd's will be run as root
 
-  # TODO: change this to a hash.
-  - printf "user:still_testing" | chpasswd
-
   # Gnome-Remote-Desktop
   - sudo -u gnome-remote-desktop sh -c 'winpr-makecert -silent -rdp -path ~/.local/share/gnome-remote-desktop tls'
   - grdctl --system rdp set-tls-cert /var/lib/gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.crt
   - grdctl --system rdp set-tls-cert /var/lib/gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.crt
   - grdctl --system rdp set-tls-key /var/lib/gnome-remote-desktop/.local/share/gnome-remote-desktop/tls.key
   - grdctl --system rdp enable
-  - grdctl --system rdp set-credentials test testing
   - systemctl enable --now gdm.service
   - systemctl enable --now gnome-remote-desktop.service
-    
-
-  - reboot
