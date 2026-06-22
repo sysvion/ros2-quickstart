@@ -7,4 +7,5 @@ requires-python = ">=3.14"
 dependencies = [
     "cryptography>=49.0.0",
     "hcloud>=2.21.0",
+    "requests>=2.34.2",
 ]

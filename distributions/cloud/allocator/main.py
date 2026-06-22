@@ -6,6 +6,9 @@ from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 
+import requests
+
+import json
 import os
 from time import sleep
 import subprocess
@@ -60,7 +63,23 @@ def pingSshIfPeerIsUp(
         sleep(5)
 
 
-def main():
+def spinup(s_type: str,
+           location: str,
+           account_password: str,
+           totp: str,
+           guacamole_url_prefix: str,
+           connection_user: str,
+           connection_passwd: str):
+    """
+    Spinup a preconfigured vps
+
+    parameters:
+     - str s_type: the server type which determains if has shared resources or
+        not. if it has 4 or 8 gb or ram. And other specs of the vps.
+     - str location: which data center the vps is located:
+'nbg1'
+
+    """
 
     id_file = (private_storage / "current_id")
     vm_id = int(readContensOfFile(id_file)) + 1
@@ -78,10 +97,16 @@ def main():
             )
 
     # machine
-    selected_type = client.server_types.get_by_name('cpx32')
+    selected_type = client.server_types.get_by_name(s_type)
 
     if selected_type is None:
         print("type not found")
+        return
+
+    selected_location = client.locations.get_by_name(location)
+
+    if selected_location is None:
+        print("location does not exist")
         return
 
     # ssh keys
@@ -106,15 +131,15 @@ def main():
 
     key = client.ssh_keys.create(name=vm_name, public_key=public_key)
 
-    # init script
-    print("creating a server with id " + str(vm_id))
+    # init script which 1) creates a account 2) installs ubuntu-desktop 3) setup gnome-remote-desktop
     cloud_init = readContensOfFile(distro_root / "cloud-init.yml")
 
+    print("creating a server with id " + str(vm_id))
     server = client.servers.create(
         vm_name,
         selected_type,
         Image(name="ubuntu-24.04"),
-        location=client.locations.get_by_name('nbg1'),
+        location=selected_location,
         ssh_keys=[key],
         user_data=cloud_init,
     )
@@ -137,8 +162,6 @@ def main():
                      dest
                      ])
 
-    password = "still_testing"
-
     subprocess.call(['ssh',
                      '-i', (vm_dir/"id_rsa").as_posix(),
                      "root@"+server.server.public_net.ipv4.ip,
@@ -150,13 +173,13 @@ def main():
                      """
                      echo script loaded now waiting for cloud-init to finish
                      cloud-init status --wait
+                     echo "script has been started"
 
-
-                     printf user:"""+password+""" | chpasswd
+                     printf user:"""+account_password+""" | chpasswd
                      cat > /opt/askpass.sh <<EOD
-                     echo -n """+password+"""
+                     echo -n """+account_password+"""
 EOD
-                     grdctl --system rdp set-credentials test testing
+                     grdctl --system rdp set-credentials """+connection_user+""" """+connection_passwd+"""
 
                      chmod o+rx /opt/askpass.sh
                      sudo --login --user=user bash -c ' cd /opt/install && bash process.bash'
@@ -168,6 +191,47 @@ EOD
                      "\""
                      ])
 
+    # configuring webbrowser rdp viewer guacemole
+
+    # get api token
+
+    response = requests.post(guacamole_url_prefix+"/api/tokens",
+                             data={
+                                 "username": "guacadmin",
+                                 "password": "guacadmin",
+                                 "guac-totp": totp
+                                 })
+    response.raise_for_status()
+    response_body = response.json()
+
+    # api doc found on a random github repo: 
+    guacemole_connection = {
+            "parentIdentifier": "ROOT",
+            "name": vm_name,
+            "protocol": "rdp",
+            "parameters": {
+                "hostname": server.server.public_net.ipv4.ip,
+                "ignore-cert": True,
+                "username": connection_user,
+                "password": connection_passwd
+                },
+            "attributes": {}
+            }
+    response = requests.post(guacamole_url_prefix+"/api/session/data/"+response_body["dataSource"]+"/connections",
+                             headers={
+                                 "guacamole-token": response_body["authToken"],
+                                 "content-type": "application/json"
+                                 },
+                             data=json.dumps(guacemole_connection))
+
+    response.raise_for_status()
+
 
 if __name__ == "__main__":
-    main()
+    spinup(s_type="cpx32",
+           location="nbg1",
+           account_password="still_testing",
+           guacamole_url_prefix="http://localhost:8080/guacamole",
+           connection_user="test",
+           connection_passwd="testing",
+           totp="")
