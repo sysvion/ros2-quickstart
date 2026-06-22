@@ -18,3 +18,5 @@ sudo -A dpkg -i /tmp/code.deb
 sudo -A apt-get install -f -y # install passable missing dependencies 
 
 rm /tmp/code.deb
+
+code --install-extension Ranch-Hand-Robotics.rde-pack

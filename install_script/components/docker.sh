@@ -22,3 +22,5 @@ EOF
 
 sudo -A apt update
 sudo -A apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+sudo -A usermod $USER --append --group docker

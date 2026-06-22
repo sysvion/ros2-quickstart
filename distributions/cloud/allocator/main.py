@@ -1,5 +1,6 @@
 from hcloud import Client
 from hcloud.images import Image
+from hcloud.locations import Location
 
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -11,10 +12,7 @@ import subprocess
 from pathlib import Path
 
 # MAKE SURE THE DIRACTORY IS ONLY READABLE BY THIS PROGRAM BY FOR INSTANCE RUNNING IT AS A SYSTEMD SERVICE
-import sqlite3
 private_storage = Path("/var/lib/ros2-vps-creator/")
-
-# TODO: check if this is the correct location
 
 install_script_root = (Path(os.path.abspath(__file__)) / "../../../../install_script").resolve()
 distro_root = (Path(os.path.abspath(__file__)) / ".." / '..').resolve()
@@ -68,7 +66,7 @@ def main():
     vm_id = int(readContensOfFile(id_file)) + 1
     replaceFile(id_file, (str(vm_id)))
 
-    vm_name = "vmGeneratorInstance" + str(vm_id)
+    vm_name = "vpsGeneratorInstance" + str(vm_id)
     vm_dir = private_storage / vm_name
     vm_dir.mkdir()
 
@@ -80,10 +78,7 @@ def main():
             )
 
     # machine
-    selected_type = None
-    for machine in client.server_types.get_all():
-        if machine.name == 'cpx32':
-            selected_type = machine
+    selected_type = client.server_types.get_by_name('cpx32')
 
     if selected_type is None:
         print("type not found")
@@ -119,6 +114,7 @@ def main():
         vm_name,
         selected_type,
         Image(name="ubuntu-24.04"),
+        location=client.locations.get_by_name('nbg1'),
         ssh_keys=[key],
         user_data=cloud_init,
     )
@@ -163,8 +159,7 @@ EOD
                      grdctl --system rdp set-credentials test testing
 
                      chmod o+rx /opt/askpass.sh
-                     cd /opt/install
-                     sudo --preserve-env  --login --user=user bash process.bash
+                     sudo --login --user=user bash -c ' cd /opt/install && bash process.bash'
                      cd ~
                      rm /opt/install
                      rm /opt/vm_askpass.sh

@@ -10,7 +10,7 @@ sudo -A apt-get install -y \
 
 source /opt/ros/jazzy/setup.bash
 git clone --depth 1 --branch jazzy https://github.com/DoosanRobotics/doosan-robot2 ~/ros_vendor_ws/src/doosan
-cd ~
+cd ~/ros_vendor_ws
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
 colcon build
 cd -
