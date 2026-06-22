@@ -20,22 +20,6 @@ install_script_root = (Path(os.path.abspath(__file__)) / "../../../../install_sc
 distro_root = (Path(os.path.abspath(__file__)) / ".." / '..').resolve()
 
 
-#def createdb():
-#    cx = sqlite3.connect(db_path)
-#    cx.execute("""create table if not exists keys (
-#                    id TEXT primary key,
-#                    key TEXT NOT NULL
-#               );""")
-#
-#    cx.execute("""create vps if not exists keys (
-#                    id int primary key,
-#                    SERVER_ID
-#                    created_at //todo
-#                    public key 
-#                    private_key 
-#                    external_management_blob
-#               );""")
-
 def readContensOfFile(file: Path) -> str:
     fp = file.open()
     contents = fp.read()
@@ -53,6 +37,29 @@ def replaceFile(file: Path, contents: str, mode=0o600):
     f.write(contents)
     f.truncate()
     f.close()
+
+
+def pingSshIfPeerIsUp(
+    ip: str,
+    private_key_path: Path,
+    user: str = "root"
+):
+    while True:
+        res = subprocess.call(
+            [
+                "ssh",
+                "-i", str(private_key_path),
+                "-o", "StrictHostKeyChecking=accept-new",
+                f"{user}@{ip}",
+                "exit",
+                "0",
+            ]
+        )
+
+        if res == 0:
+            return
+
+        sleep(5)
 
 
 def main():
@@ -107,7 +114,6 @@ def main():
     # init script
     print("creating a server with id " + str(vm_id))
     cloud_init = readContensOfFile(distro_root / "cloud-init.yml")
-    # TODO: change password within script
 
     server = client.servers.create(
         vm_name,
@@ -118,8 +124,12 @@ def main():
     )
 
     server.action.wait_until_finished()
-    print("now sleep")
-    sleep(100)
+    sleep(10)
+    pingSshIfPeerIsUp(
+            server.server.public_net.ipv4.ip,
+            vm_dir/"id_rsa"
+            )
+
 
     # upload and run install script
     dest = "root@"+server.server.public_net.ipv4.ip+":/opt/install"
@@ -142,18 +152,20 @@ def main():
                      "bash",
                      "-c \"",
                      """
+                     echo script loaded now waiting for cloud-init to finish
+                     cloud-init status --wait
+
+
                      printf user:"""+password+""" | chpasswd
                      cat > /opt/askpass.sh <<EOD
                      echo -n """+password+"""
 EOD
-
-                     cloud-init status --wait
                      grdctl --system rdp set-credentials test testing
-                     chmod o+x /opt/askpass.sh
-                     systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+
+                     chmod o+rx /opt/askpass.sh
                      cd /opt/install
-                     sudo --preserve-env --user=user bash process.bash
-                     systemctl unmask sleep.target suspend.target hibernate.target hybrid-sleep.target
+                     sudo --preserve-env  --login --user=user bash process.bash
+                     cd ~
                      rm /opt/install
                      rm /opt/vm_askpass.sh
                      reboot
@@ -164,27 +176,3 @@ EOD
 
 if __name__ == "__main__":
     main()
-
-
-#    def requirents(it: BoundServerType) -> bool:
-#        if it.architecture != "x86":
-#            return False
-#
-#        # it should have enough to compile large c++ projects
-#        if it.cores <= 3:
-#            return False
-#
-#        if it.disk <= 50:
-#            return False
-#
-#        has_a_nice_location_from_delft = False
-#        for loc in it.locations:
-#            if loc.available and loc.location.name in ["hel1", "fsn1", "nbg1"]:
-#                has_a_nice_location_from_delft = True
-#
-#        if not has_a_nice_location_from_delft:
-#            return False
-#
-#        return True
-#
-#    filterd_types = list(filter(requirents, types))
