@@ -1,0 +1,3 @@
+guac.sysvion.nl
+rewrite /guacamole{uri}
+reverse_proxy guacamole:8080

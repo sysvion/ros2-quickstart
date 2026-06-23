@@ -41,7 +41,23 @@ services:
       - drive:/drive:rw
       - record:/record:rw
 
+  caddy:
+    image: caddy:2.11.4
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy_conf:/etc/caddy
+      - ./site:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+
+
 volumes:
   dbdata:
   drive:
   record:
+  caddy_data:
+  caddy_config:
