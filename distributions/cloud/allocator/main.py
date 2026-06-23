@@ -173,7 +173,7 @@ def spinup(s_type: str,
                      """
                      echo script loaded now waiting for cloud-init to finish
                      cloud-init status --wait
-                     echo "script has been started"
+                     echo script has been started
 
                      printf user:"""+account_password+""" | chpasswd
                      cat > /opt/askpass.sh <<EOD
@@ -191,9 +191,10 @@ EOD
                      "\""
                      ])
 
-    # configuring webbrowser rdp viewer guacemole
+    # configuring webbrowser rdp viewer: guacamole
 
-    # get api token
+    # api doc found on a random github repo: ridvanaltun/guacamole-rest-api-documentation
+    # source is in github apache/guacamole-client:/guacamole/src/main/java/org/apache/guacamole/rest/
 
     response = requests.post(guacamole_url_prefix+"/api/tokens",
                              data={
@@ -204,8 +205,7 @@ EOD
     response.raise_for_status()
     response_body = response.json()
 
-    # api doc found on a random github repo: 
-    guacemole_connection = {
+    guacamole_connection = {
             "parentIdentifier": "ROOT",
             "name": vm_name,
             "protocol": "rdp",
@@ -222,7 +222,7 @@ EOD
                                  "guacamole-token": response_body["authToken"],
                                  "content-type": "application/json"
                                  },
-                             data=json.dumps(guacemole_connection))
+                             data=json.dumps(guacamole_connection))
 
     response.raise_for_status()
 
