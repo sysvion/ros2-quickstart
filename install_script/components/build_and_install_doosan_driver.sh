@@ -14,3 +14,4 @@ cd /etc/skel/ros_vendor_ws/doosan
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
 sudo -A bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 cd -
+sudo ./src/doosan-robot2/install_emulator.sh

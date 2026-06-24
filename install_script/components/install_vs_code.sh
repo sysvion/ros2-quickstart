@@ -1,6 +1,6 @@
 set -e
 
-export VSCODE_VERSION="1.119.0"
+export VSCODE_VERSION="latest"
 
 sudo -A apt update
 sudo -A apt install -y wget \

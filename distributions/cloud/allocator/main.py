@@ -212,7 +212,9 @@ EOD
                 "hostname": server.server.public_net.ipv4.ip,
                 "ignore-cert": True,
                 "username": connection_user,
-                "password": connection_passwd
+                "password": connection_passwd,
+                "resize-method": "display-update",
+                "normalize-clipboard": "preserve",
                 },
             "attributes": {}
             }
@@ -227,7 +229,7 @@ EOD
 
 
 if __name__ == "__main__":
-    spinup(s_type="cpx32",
+    spinup(s_type="cpx42",
            location="nbg1",
            admin_password="still_testing",
            guacamole_url_prefix="https://guac.sysvion.nl",
