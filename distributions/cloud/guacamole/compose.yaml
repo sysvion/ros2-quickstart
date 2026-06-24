@@ -44,6 +44,8 @@ services:
   caddy:
     image: caddy:2.11.4
     restart: unless-stopped
+    depends_on:
+      - guacamole
     ports:
       - "80:80"
       - "443:443"

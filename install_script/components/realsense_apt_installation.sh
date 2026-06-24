@@ -16,15 +16,14 @@ sudo -A apt-get update
 # install
 sudo -A apt-get -y install librealsense2-dkms librealsense2-utils librealsense2-dev librealsense2-dbg
 
-git clone --depth 1 --branch ros2-master \
+sudo -A git clone --depth 1 --branch ros2-master \
     https://github.com/realsenseai/realsense-ros.git \
-    ~/ros_vendor_ws/src/realsense-ros
+    /etc/skel/ros_vendor_ws/realsense/src/realsense-ros
 
-cd ~/ros_vendor_ws/
-. /opt/ros/jazzy/setup.bash
+cd /etc/skel/ros_vendor_ws/realsense/
 
 # refresh sudo login timeout
-sudo -A ls
+. /opt/ros/jazzy/setup.bash
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
-colcon build --paths src/realsense-ros/* 
+sudo -A bash -c ". /opt/ros/jazzy/setup.bash && colcon build"
 cd -

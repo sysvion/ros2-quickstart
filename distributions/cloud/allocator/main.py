@@ -65,8 +65,7 @@ def pingSshIfPeerIsUp(
 
 def spinup(s_type: str,
            location: str,
-           account_password: str,
-           totp: str,
+           admin_password: str,
            guacamole_url_prefix: str,
            connection_user: str,
            connection_passwd: str):
@@ -77,7 +76,6 @@ def spinup(s_type: str,
      - str s_type: the server type which determains if has shared resources or
         not. if it has 4 or 8 gb or ram. And other specs of the vps.
      - str location: which data center the vps is located:
-'nbg1'
 
     """
 
@@ -151,7 +149,6 @@ def spinup(s_type: str,
             vm_dir/"id_rsa"
             )
 
-
     # upload and run install script
     dest = "root@"+server.server.public_net.ipv4.ip+":/opt/install"
     subprocess.call(['scp',
@@ -175,16 +172,16 @@ def spinup(s_type: str,
                      cloud-init status --wait
                      echo script has been started
 
-                     printf user:"""+account_password+""" | chpasswd
+                     printf pc_admin:"""+admin_password+""" | chpasswd
                      cat > /opt/askpass.sh <<EOD
-                     echo -n """+account_password+"""
+                     echo -n """+admin_password+"""
 EOD
                      grdctl --system rdp set-credentials """+connection_user+""" """+connection_passwd+"""
+                     systemctl start gnome-remote-desktop
 
                      chmod o+rx /opt/askpass.sh
-                     sudo --login --user=user bash -c ' cd /opt/install && bash process.bash'
+                     sudo --login --user=pc_admin bash -c ' cd /opt/install && bash process.bash'
                      cd ~
-                     rm /opt/install
                      rm /opt/vm_askpass.sh
                      reboot
                      """,
@@ -195,6 +192,8 @@ EOD
 
     # api doc found on a random github repo: ridvanaltun/guacamole-rest-api-documentation
     # source is in github apache/guacamole-client:/guacamole/src/main/java/org/apache/guacamole/rest/
+
+    totp = input("guacamole totp: ")
 
     response = requests.post(guacamole_url_prefix+"/api/tokens",
                              data={
@@ -230,8 +229,8 @@ EOD
 if __name__ == "__main__":
     spinup(s_type="cpx32",
            location="nbg1",
-           account_password="still_testing",
-           guacamole_url_prefix="http://localhost:8080/guacamole",
-           connection_user="test",
-           connection_passwd="testing",
-           totp="")
+           admin_password="still_testing",
+           guacamole_url_prefix="https://guac.sysvion.nl",
+           connection_user="ros2_vms",
+           connection_passwd="patato_loving_queen_with_a_barrel_jack",
+           )

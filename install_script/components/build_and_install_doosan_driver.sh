@@ -9,8 +9,8 @@ sudo -A apt-get install -y \
   dbus-x11 ros-jazzy-moveit-configs-utils ros-jazzy-moveit-ros-move-group
 
 source /opt/ros/jazzy/setup.bash
-git clone --depth 1 --branch jazzy https://github.com/DoosanRobotics/doosan-robot2 ~/ros_vendor_ws/src/doosan
-cd ~/ros_vendor_ws
+sudo -A git clone --depth 1 --branch jazzy https://github.com/DoosanRobotics/doosan-robot2 /etc/skel/ros_vendor_ws/doosan/src/doosan-robot2
+cd /etc/skel/ros_vendor_ws/doosan
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
-colcon build
+sudo -A bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 cd -
