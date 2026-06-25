@@ -229,7 +229,7 @@ EOD
 
 
 if __name__ == "__main__":
-    spinup(s_type="cpx42",
+    spinup(s_type="cpx32",
            location="nbg1",
            admin_password="still_testing",
            guacamole_url_prefix="https://guac.sysvion.nl",

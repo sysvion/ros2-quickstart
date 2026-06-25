@@ -14,7 +14,10 @@ bash components/install_vs_code.sh
 
 bash components/realsense_apt_installation.sh
 
-sudo -A bash components/practicum_dependencies.sh
+bash ./components/terminal_tools.sh
+
+bash ./components/user_creator/install.sh
+
 bash components/tutorial_gui.sh
 
 bash components/desktop_customization.sh

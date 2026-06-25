@@ -14,4 +14,14 @@ cd /etc/skel/ros_vendor_ws/doosan
 rosdep install -r --from-paths src --ignore-src --rosdistro jazzy -y
 sudo -A bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 cd -
-sudo ./src/doosan-robot2/install_emulator.sh
+sudo -A bash /etc/skel/ros_vendor_ws/doosan/src/doosan-robot2/install_emulator.sh
+
+sudo -A mkdir -p /etc/skel/.local/share/applications
+sudo -A tee /etc/skel/.local/share/applications/doosan_moveit.desktop <<EOF
+[Desktop Entry]
+Name=doosan moveit
+Type=Application
+Exec=bash -c 'source /opt/ros/jazzy/setup.bash && source \$HOME/ros_vendor_ws/doosan/install/setup.bash && ros2 launch dsr_bringup2 dsr_bringup2_moveit.launch.py mode:=virtual model:=m1013 host:=127.0.0.1'
+Terminal=true
+Icon=/opt/install/components/rviz.png
+EOF
